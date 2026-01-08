@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Text, View } from 'react-native';
 
-type Buses = {
+type ETA = {
   route: string;
   dir: string;
   service_type: string;
@@ -14,20 +14,39 @@ type KMBResponse = {
   type: string;
   version: string;
   generated_timestamp: string;
-  data : Buses[];
+  data : ETA[];
 };
 
 const App = () => {
   const [isLoading, setLoading] = useState(true);
-  const [data, setData] = useState<Buses[]>([]);
+  const [data, setData] = useState<ETA[]>([]);
   const [generatedTimestamp, setGeneratedTimestamp] = useState<string>('');
 
-  const getBUSETA = async () => {
+  // List of routes to fetch
+  const routesToFetch = [
+    { stop: 'B464BD6334A93FA1', route: '272P', dir: '1' },
+    { stop: 'B644204AEDE7A031', route: '272X', dir: '1' },
+    // Add more routes here, e.g. { stop: 'SOME_STOP_ID', route: 'SOME_ROUTE', dir: '1' }
+  ];
+
+  // Helper to fetch ETA for a single route
+  const fetchRouteETA = async (stop: string, route: string, dir: string) => {
+    const url = `https://data.etabus.gov.hk/v1/transport/kmb/eta/${stop}/${route}/${dir}`;
+    const response = await fetch(url);
+    return response.json() as Promise<KMBResponse>;
+  };
+
+  // Fetch all ETAs and combine results
+  const getAllBUSETAs = async () => {
     try {
-      const response = await fetch('https://data.etabus.gov.hk/v1/transport/kmb/route-eta/3M/1');
-      const json = (await response.json()) as KMBResponse;
-      setData(json.data);
-      setGeneratedTimestamp(json.generated_timestamp);
+      const results = await Promise.all(
+        routesToFetch.map(r => fetchRouteETA(r.stop, r.route, r.dir))
+      );
+      // Flatten all data arrays into one
+      const allData = results.flatMap(res => res.data);
+      setData(allData);
+      // Use the latest generated timestamp
+      setGeneratedTimestamp(results[0]?.generated_timestamp || '');
     } catch (error) {
       console.error(error);
     } finally {
@@ -36,19 +55,20 @@ const App = () => {
   };
 
   useEffect(() => {
-    getBUSETA();
+    getAllBUSETAs();
     const intervalId = setInterval(() => {
-      getBUSETA();
+      getAllBUSETAs();
     }, 30000); // 30 seconds
     return () => clearInterval(intervalId);
   }, []);
 
-
   // Helper to convert ETA string to HK local time
   const formatEtaToHKTime = (eta: string) => {
     if (!eta) return 'N/A';
+    // Try to parse as ISO string
     const date = new Date(eta);
-    if (isNaN(date.getTime())) return eta;
+    if (isNaN(date.getTime())) return eta; // fallback if not valid
+    // Format to HH:mm:ss in HK time
     return date.toLocaleTimeString('en-HK', {
       hour: '2-digit',
       minute: '2-digit',
@@ -82,7 +102,7 @@ const App = () => {
             keyExtractor={({route}) => route}
             renderItem={({item}) => (
               <Text>
-                {item.route} - {item.dir} ({item.service_type}) to {item.dest_en} ETA: {formatEtaToHKTime(item.eta)}
+                {item.route} will arrive in {getMinutesUntilArrival(item.eta) || '-'} minutes (ETA: {formatEtaToHKTime(item.eta)})
               </Text>
             )}
           />
