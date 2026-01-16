@@ -50,8 +50,8 @@
               "label": "Bus ETA Widget",
               "minWidth": "320dp",
               "minHeight": "120dp",
-              "targetCellWidth": 3,
-              "targetCellHeight": 1,
+              "targetCellWidth": 5,
+              "targetCellHeight": 2,
               "description": "Display bus route ETAs (272P, 272X)",
               "updatePeriodMillis": 300000
             }
