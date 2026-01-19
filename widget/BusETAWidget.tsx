@@ -1,7 +1,7 @@
 import React from "react";
 import {
-    FlexWidget,
-    TextWidget,
+  FlexWidget,
+  TextWidget,
 } from "react-native-android-widget";
 import type { ETA } from "../app/utils/fetch";
 import { getMinutesUntilArrival } from "../app/utils/time_formatting";
@@ -67,7 +67,8 @@ export function BusETAWidget({ etas, isLoading, error }: BusETAWidgetProps) {
         borderRadius: 16,
         padding: 16,
       }}
-      clickAction="REFRESH"
+      clickAction="UPDATE_ETA"
+      clickActionData={{ action: "refresh" }}
     >
       <TextWidget
         text={displayText}

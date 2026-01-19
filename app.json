@@ -4,7 +4,7 @@
     "slug": "bus",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/bus.png",
     "scheme": "bus",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -15,7 +15,7 @@
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
+        "foregroundImage": "./assets/images/bus.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
@@ -46,14 +46,16 @@
         {
           "widgets": [
             {
-              "name": "Hello",
+              "name": "BusETAWidget",
               "label": "Bus ETA Widget",
-              "minWidth": "320dp",
-              "minHeight": "120dp",
-              "targetCellWidth": 5,
-              "targetCellHeight": 2,
+              "minWidth": "180dp",
+              "minHeight": "60dp",
+              "targetCellWidth": 3,
+              "targetCellHeight": 1,
               "description": "Display bus route ETAs (272P, 272X)",
-              "updatePeriodMillis": 300000
+              "previewImage": "./assets/images/widget_preview.png",
+              "updatePeriodMillis": 300000,
+              "resizeMode": "horizontal|vertical"
             }
           ]
         }

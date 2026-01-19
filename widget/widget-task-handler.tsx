@@ -10,8 +10,8 @@ const routesToFetch = [
 ];
 
 const nameToWidget = {
-  // Hello will be the **name** with which we will reference our widget.
-  Hello: BusETAWidget,
+  // BusETAWidget must match the "name" in app.json widget configuration
+  BusETAWidget: BusETAWidget,
 };
 
 export async function widgetTaskHandler(props: WidgetTaskHandlerProps) {
