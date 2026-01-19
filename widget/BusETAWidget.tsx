@@ -85,17 +85,18 @@ export function BusETAWidget({ etas, isLoading, error }: BusETAWidgetProps) {
             fontSize: 16,
             color: "#ffffff",
             fontWeight: "bold",
-            marginBottom: 8,
+            marginLeft: 4,
+            textAlign: "left",
           }}
         />
       ) : null}
       <TextWidget
         text={displayText}
         style={{
-          fontSize: 20,
+          fontSize: 16,
           color: "#ffffff",
           fontWeight: "bold",
-          marginLeft: 24,
+          marginLeft: 8,
           textAlign: "left",
         }}
       />
