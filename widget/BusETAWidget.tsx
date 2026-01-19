@@ -38,14 +38,22 @@ export function BusETAWidget({ etas, isLoading, error }: BusETAWidgetProps) {
     });
   };
 
-  // Get display text
+  // Helper to normalize stop name by removing (PA...)
+  const normalizeStopName = (name: string) => name.replace(/\s*\(PA\d+\)/, '').trim();
+
+  // Try to get the stop name from the first ETA (if available)
+  let stopName = '';
+  if (etas && etas.length > 0 && (etas[0] as any).stopName) {
+    stopName = normalizeStopName((etas[0] as any).stopName);
+  }
+
+  // Fallback: allow passing stopName as a prop in the future, or just show empty
+
   const getDisplayText = () => {
     if (isLoading) return "Loading...";
     if (error) return error;
-    
     const routeETAs = getRouteETAs(etas);
     if (routeETAs.length === 0) return "No buses available";
-    
     return routeETAs
       .map(({ route, minutes }) => {
         if (minutes === null) return `${route}: --`;
@@ -70,12 +78,25 @@ export function BusETAWidget({ etas, isLoading, error }: BusETAWidgetProps) {
       clickAction="UPDATE_ETA"
       clickActionData={{ action: "refresh" }}
     >
+      {stopName ? (
+        <TextWidget
+          text={stopName}
+          style={{
+            fontSize: 16,
+            color: "#ffffff",
+            fontWeight: "bold",
+            marginBottom: 8,
+          }}
+        />
+      ) : null}
       <TextWidget
         text={displayText}
         style={{
           fontSize: 20,
           color: "#ffffff",
           fontWeight: "bold",
+          marginLeft: 24,
+          textAlign: "left",
         }}
       />
     </FlexWidget>

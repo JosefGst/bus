@@ -1,6 +1,6 @@
 import React from "react";
 import type { WidgetTaskHandlerProps } from "react-native-android-widget";
-import { getAllBUSETAs } from "../app/utils/fetch";
+import { fetchStopInfo, getAllBUSETAs } from "../app/utils/fetch";
 import { BusETAWidget } from "./BusETAWidget";
 
 // Routes to fetch - same as in my_routes.tsx
@@ -28,7 +28,31 @@ export async function widgetTaskHandler(props: WidgetTaskHandlerProps) {
   const fetchAndRenderETAs = async () => {
     try {
       const { allData } = await getAllBUSETAs(routesToFetch);
-      props.renderWidget(<Widget {...widgetInfo} etas={allData} />);
+
+      // Fetch stop names for all unique stops
+      const uniqueStops = Array.from(new Set(routesToFetch.map(r => r.stop)));
+      const stopInfoResults = await Promise.all(uniqueStops.map(stopId => fetchStopInfo(stopId)));
+      const stopNameMap: Record<string, string> = {};
+      stopInfoResults.forEach((info, idx) => {
+        if (info) {
+          stopNameMap[uniqueStops[idx]] = info.name_en;
+        }
+      });
+
+      // Attach stopName to each ETA (by matching route/dir to routesToFetch)
+      const normalizeDir = (dir: string) => {
+        if (dir === '1' || dir === 'O') return ['1', 'O'];
+        if (dir === '2' || dir === 'I') return ['2', 'I'];
+        return [dir];
+      };
+      const etasWithStopName = allData.map((eta, idx) => {
+        const routeObj = routesToFetch.find(r => r.route === eta.route && normalizeDir(r.dir).includes(eta.dir));
+        const stopId = routeObj ? routeObj.stop : routesToFetch[idx]?.stop;
+        const stopName = stopId ? stopNameMap[stopId] : undefined;
+        return { ...eta, stopName };
+      });
+
+      props.renderWidget(<Widget {...widgetInfo} etas={etasWithStopName} />);
     } catch (error) {
       console.error("Error fetching ETA data:", error);
       // Always render something, even on error
