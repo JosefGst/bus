@@ -16,11 +16,10 @@ const RoutesStopScreen = () => {
       setLoading(true);
       setError(null);
       try {
-        if (typeof route === 'string' && typeof bound === 'string' && typeof service_type === 'string') {
-          // For demo, use a sample stopId. In a real app, you would pass the stopId from the previous screen or select it here.
-          // Here, we just use the route as stop for demonstration, but you should update this logic as needed.
-          const stopId = route; // Replace with actual stopId logic
-          const res = await fetchRouteETA(stopId, route, bound);
+        if (typeof route === 'string' && typeof service_type === 'string') {
+          // For demo, use route as stopId. Replace with actual stopId logic as needed.
+          const stopId = route; // Replace with actual stopId
+          const res = await fetchRouteETA(route, service_type);
           setData(res.data);
         } else {
           setError('Invalid route, bound, or service type');
@@ -58,7 +57,7 @@ const RoutesStopScreen = () => {
               {item.route} ({item.dir}) [{item.service_type}] → {item.dest_en} ETA: {item.eta}
             </Text>
           )}
-          ListEmptyComponent={<Text>No stops found for this route.</Text>}
+          ListEmptyComponent={<Text>No ETAs found for this route.</Text>}
         />
       )}
     </View>
