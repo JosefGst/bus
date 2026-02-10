@@ -1,43 +1,49 @@
+
 # Copilot Instructions for AI Agents
 
 ## Project Overview
-- This is an Expo React Native project (see `README.md`).
-- The codebase targets both Android and iOS, with native code in `android/` and `ios/`.
-- Main app code is in the `app/` directory. Example/demo code is in `app-example/`.
-- Widgets are implemented in `widget/` (e.g., `BusETAWidget.tsx`, `HelloWidget.tsx`).
+- Expo React Native project targeting Android and iOS (see [README.md](../../README.md)).
+- Main app code in [app/](../../app/), widgets in [widget/](../../widget/), native code in [android/](../../android/) and [ios/](../../ios/).
+- [app-example/](../../app-example/) contains demo/experimental features and shared UI patterns.
+
+## Architecture & Data Flow
+- **Navigation:** Managed via expo-router, organized with `_layout.tsx` files in [app/](../../app/) and [app-example/](../../app-example/).
+- **Screens & Routes:** Route logic in [my_routes.tsx](../../app/my_routes.tsx) and subfolders under `(tabs)/`.
+- **Widgets:** Android widgets implemented in [widget/](../../widget/), registered via [widget-registration.ts](../../widget-registration.ts) and configured in [app.json](../../app.json).
+- **Data Fetching:** API calls and data formatting in [app/utils/fetch.ts](../../app/utils/fetch.ts) and [app/utils/time_formatting.ts](../../app/utils/time_formatting.ts).
+- **Native Integration:** Android uses Gradle ([android/build.gradle](../../android/build.gradle)), iOS uses CocoaPods ([ios/Podfile](../../ios/Podfile)).
 
 ## Key Workflows
 - **Install dependencies:** `npm install`
 - **Run on Android:** `npx expo run:android`
-- **Run on iOS:** `npx expo run:ios` (requires macOS)
-- **Reset project:** See `app-example/scripts/reset-project.js`
-
-## Architectural Patterns
-- **Navigation:** App navigation is organized using `_layout.tsx` files in `app/` and `app-example/`.
-- **Routes:** Route definitions are in `my_routes.tsx` and subfolders under `app/` and `app-example/(tabs)/`.
-- **UI Components:** Shared UI components are in `app-example/components/` and `app-example/components/ui/`.
-- **Hooks:** Custom hooks are in `app-example/hooks/`.
-- **Theming:** Theming logic is in `app-example/constants/theme.ts` and related hooks.
-- **Utilities:** Utility functions (e.g., fetch, time formatting) are in `app/utils/`.
+- **Run on iOS:** `npx expo run:ios` (macOS required)
+- **Run on Web:** `npm run web`
+- **Lint:** `npm run lint`
+- **Reset project:** `npm run reset-project` (see [app-example/scripts/reset-project.js](../../app-example/scripts/reset-project.js))
 
 ## Project Conventions
 - Use TypeScript for all new code.
 - Organize screens and navigation using folders and `_layout.tsx` files.
-- Place shared logic in `utils/`, `hooks/`, or `components/` as appropriate.
-- Widget-related logic should go in `widget/`.
-- Use `app-example/` for experimental or demo features.
+- Place shared logic in [utils/](../../app/utils/), [hooks/](../../app-example/hooks/), or [components/](../../app-example/components/).
+- Widget logic goes in [widget/](../../widget/). Widget names must match configuration in [app.json](../../app.json).
+- Use [app-example/](../../app-example/) for experimental/demo features and advanced UI.
+- Follow folder structure and naming conventions as seen in [app/](../../app/) and [app-example/](../../app-example/).
 
-## Integration Points
-- **Native code:** Android and iOS native code is in `android/` and `ios/`.
-- **Expo:** Project is managed with Expo; see `app.json` and `eas.json` for configuration.
-- **Build tools:** Android uses Gradle (`android/build.gradle`), iOS uses CocoaPods (`ios/Podfile`).
+## Integration Points & Patterns
+- **Expo config:** [app.json](../../app.json), [eas.json](../../eas.json)
+- **Widget registration:** [widget-registration.ts](../../widget-registration.ts) (Android only)
+- **Widget implementation:** [widget/BusETAWidget.tsx](../../widget/BusETAWidget.tsx), [widget/widget-task-handler.tsx](../../widget/widget-task-handler.tsx)
+- **API/data utilities:** [app/utils/fetch.ts](../../app/utils/fetch.ts), [app/utils/time_formatting.ts](../../app/utils/time_formatting.ts)
+- **Navigation:** Update `_layout.tsx` and route files for new screens/routes
+- **Theming:** Use hooks/constants in [app-example/hooks/](../../app-example/hooks/) and [app-example/constants/theme.ts](../../app-example/constants/theme.ts)
 
 ## Examples
-- See `app-example/components/parallax-scroll-view.tsx` for advanced UI patterns.
-- See `widget/BusETAWidget.tsx` for widget implementation.
-- See `app/utils/fetch.ts` for API call patterns.
+- [widget/BusETAWidget.tsx](../../widget/BusETAWidget.tsx): Android widget UI and data flow
+- [app/utils/fetch.ts](../../app/utils/fetch.ts): API call patterns
+- [app-example/components/parallax-scroll-view.tsx](../../app-example/components/parallax-scroll-view.tsx): Advanced UI pattern
 
 ## Additional Notes
-- Follow the folder structure and naming conventions as seen in `app/` and `app-example/`.
-- For new navigation routes, update the relevant `_layout.tsx` and `my_routes.tsx`.
-- For theming, use the hooks and constants provided in `app-example/hooks/` and `app-example/constants/`.
+- Widget data flow: [widget-task-handler.tsx](../../widget/widget-task-handler.tsx) fetches ETA data, renders widget UI, and handles widget actions.
+- Widget configuration in [app.json](../../app.json) must match widget implementation names.
+- For new navigation routes, update relevant `_layout.tsx` and route files.
+- For theming, use provided hooks and constants.
