@@ -9,11 +9,19 @@ export type ETA = {
   data_timestamp: string;
 };
 
-export type KMBResponse = {
+export type ROUTS = {
+  route: string;
+  bound: string;
+  service_type: string;
+  orig_en: string;
+  dest_en: string;
+};
+
+export type KMBResponse<T> = {
   type: string;
   version: string;
   generated_timestamp: string;
-  data: ETA[];
+  data: T[];
 };
 
 
@@ -27,11 +35,19 @@ export type StopInfo = {
   data_timestamp?: string;
 };
 
+
+// Fetch all BUS ROUTS route
+export const fetchBusROUTS = async (): Promise<KMBResponse<ROUTS>> => {
+  const url = `https://data.etabus.gov.hk/v1/transport/kmb/route`;
+  const response = await fetch(url);
+  return response.json() as Promise<KMBResponse<ROUTS>>;
+};
+
 // Fetch ETA for a single route
-export const fetchRouteETA = async (stop: string, route: string, dir: string): Promise<KMBResponse> => {
+export const fetchRouteETA = async (stop: string, route: string, dir: string): Promise<KMBResponse<ETA>> => {
   const url = `https://data.etabus.gov.hk/v1/transport/kmb/eta/${stop}/${route}/${dir}`;
   const response = await fetch(url);
-  return response.json() as Promise<KMBResponse>;
+  return response.json() as Promise<KMBResponse<ETA>>;
 };
 
 
