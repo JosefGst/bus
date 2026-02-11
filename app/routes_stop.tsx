@@ -2,9 +2,10 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native';
 import { ETA, fetchRouteSTOP, fetchStopETA, getCachedStops, ROUTS } from './utils/fetch';
+import { formatEtaToHKTime, getMinutesUntilArrival } from './utils/time_formatting';
 
 const RoutesStopScreen = () => {
-  // ...existing code...
+  const [now, setNow] = useState(Date.now());
   const router = useRouter();
   const params = useLocalSearchParams();
   const { route, bound, service_type } = params;
@@ -15,6 +16,14 @@ const RoutesStopScreen = () => {
   const [error, setError] = useState<string | null>(null);
   const [etaMap, setEtaMap] = useState<{ [stopId: string]: ETA[] }>({});
   const [loadingEta, setLoadingEta] = useState<string | null>(null);
+
+  // Update local clock every second for smooth countdown and current time
+    useEffect(() => {
+      const timer = setInterval(() => {
+        setNow(Date.now());
+      }, 1000);
+      return () => clearInterval(timer);
+    }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -81,8 +90,6 @@ const RoutesStopScreen = () => {
                         let apiBound = bound;
                         if (bound === 'I') apiBound = 'inbound';
                         else if (bound === 'O') apiBound = 'outbound';
-                        const url = `https://data.etabus.gov.hk/v1/transport/kmb/eta/${item.stop}/${route}/${service_type}`;
-                        console.log('Fetching ETA URL:', url);
                         const etaRes = await fetchStopETA(item.stop, route as string, service_type as string);
                         setEtaMap(prev => ({ ...prev, [item.stop]: etaRes.data }));
                       } catch (e) {
@@ -96,7 +103,7 @@ const RoutesStopScreen = () => {
                 style={{ paddingVertical: 8 }}
               >
                 <Text style={{ fontSize: 16, marginBottom: expandedStop === item.stop ? 0 : 8 }}>
-                  Stop Seq {item.seq}: {stopNames[item.stop] || item.stop}
+                  {item.seq}: {stopNames[item.stop] || item.stop}
                 </Text>
               </Pressable>
               {expandedStop === item.stop && (
@@ -106,7 +113,7 @@ const RoutesStopScreen = () => {
                   ) : etaMap[item.stop] && etaMap[item.stop].length > 0 ? (
                     etaMap[item.stop].map((eta, idx) => (
                       <Text key={idx} style={{ fontSize: 15, color: '#007aff' }}>
-                        ETA: {eta.eta ? eta.eta : 'N/A'}
+                        {item.route} will arrive in {getMinutesUntilArrival(eta.eta, new Date(now).toISOString()) || '-'} minutes (ETA: {formatEtaToHKTime(eta.eta)})
                       </Text>
                     ))
                   ) : (
