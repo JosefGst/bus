@@ -1,3 +1,5 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 // Utility functions for fetching KMB ETA data
 
 export type ETA = {
@@ -51,6 +53,61 @@ export const fetchSTOP = async (): Promise<KMBResponse<Stop>> => {
   const url = `https://data.etabus.gov.hk/v1/transport/kmb/stop`;
   const response = await fetch(url);
   return response.json() as Promise<KMBResponse<Stop>>;
+};
+
+// Cache keys
+const ROUTE_CACHE_KEY = 'bus_routes_cache';
+const STOP_CACHE_KEY = 'bus_stops_cache';
+
+// Helper: Get current timestamp (ISO string)
+const getNowTimestamp = () => new Date().toISOString();
+
+// Helper: Check if a timestamp is older than 24 hours
+export const isCacheStale = (timestamp: string | undefined): boolean => {
+  if (!timestamp) return true;
+  const now = Date.now();
+  const cacheTime = new Date(timestamp).getTime();
+  return now - cacheTime > 24 * 60 * 60 * 1000;
+};
+
+// Save data and timestamp to AsyncStorage
+export const saveCache = async (key: string, data: any, generatedTimestamp: string) => {
+  await AsyncStorage.setItem(key, JSON.stringify({ data, generatedTimestamp, cacheTimestamp: getNowTimestamp() }));
+};
+
+// Load data and timestamps from AsyncStorage
+export const loadCache = async (key: string) => {
+  const cached = await AsyncStorage.getItem(key);
+  if (!cached) return null;
+  try {
+    return JSON.parse(cached);
+  } catch {
+    return null;
+  }
+};
+
+// High-level: Get routes with daily cache
+export const getCachedRoutes = async (): Promise<{ routes: ROUTS[]; generatedTimestamp: string }> => {
+  const cached = await loadCache(ROUTE_CACHE_KEY);
+  if (cached && !isCacheStale(cached.cacheTimestamp)) {
+    return { routes: cached.data, generatedTimestamp: cached.generatedTimestamp };
+  }
+  // Fetch from API and update cache
+  const res = await fetchROUTE();
+  await saveCache(ROUTE_CACHE_KEY, res.data, res.generated_timestamp);
+  return { routes: res.data, generatedTimestamp: res.generated_timestamp };
+};
+
+// High-level: Get stops with daily cache
+export const getCachedStops = async (): Promise<{ stops: Stop[]; generatedTimestamp: string }> => {
+  const cached = await loadCache(STOP_CACHE_KEY);
+  if (cached && !isCacheStale(cached.cacheTimestamp)) {
+    return { stops: cached.data, generatedTimestamp: cached.generatedTimestamp };
+  }
+  // Fetch from API and update cache
+  const res = await fetchSTOP();
+  await saveCache(STOP_CACHE_KEY, res.data, res.generated_timestamp);
+  return { stops: res.data, generatedTimestamp: res.generated_timestamp };
 };
 
 // Fetch all ROUTS Stops for a given route

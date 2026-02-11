@@ -1,9 +1,7 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-
-import { ROUTS } from './utils/fetch';
+import { ROUTS, getCachedRoutes } from './utils/fetch';
 import { formatEtaToHKTime } from './utils/time_formatting';
 
 
@@ -15,37 +13,20 @@ const App = () => {
   const [generatedTimestamp, setGeneratedTimestamp] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Load routes from local storage, then fetch from network and update cache
+  // Load routes using daily cache logic
   useEffect(() => {
-    const loadAndFetchRoutes = async () => {
+    const loadRoutes = async () => {
       try {
-        // Try to load from AsyncStorage first
-        const cached = await AsyncStorage.getItem('bus_routes_cache');
-        if (cached) {
-          const parsed = JSON.parse(cached);
-          setRoutes(parsed.routes || []);
-          setGeneratedTimestamp(parsed.generatedTimestamp || '');
-          setLoading(false); // Show cached data immediately
-        }
-      } catch (e) {
-        // Ignore cache errors
-      }
-      // Always try to fetch latest from network
-      try {
-        const res = await fetchROUTE();
-        setRoutes(res.data);
-        setGeneratedTimestamp(res.generated_timestamp);
-        await AsyncStorage.setItem('bus_routes_cache', JSON.stringify({
-          routes: res.data,
-          generatedTimestamp: res.generated_timestamp,
-        }));
+        const { routes, generatedTimestamp } = await getCachedRoutes();
+        setRoutes(routes);
+        setGeneratedTimestamp(generatedTimestamp);
       } catch (error) {
         console.error(error);
       } finally {
         setLoading(false);
       }
     };
-    loadAndFetchRoutes();
+    loadRoutes();
   }, []);
 
   // Filter routes based on search query
