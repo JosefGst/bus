@@ -1,6 +1,7 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native';
+import { MaterialIcons } from '@expo/vector-icons';
 import { ETA, fetchRouteSTOP, fetchStopETA, getCachedStops, ROUTS } from './utils/fetch';
 import { formatEtaToHKTime, getMinutesUntilArrival } from './utils/time_formatting';
 
@@ -76,36 +77,48 @@ const RoutesStopScreen = () => {
           keyExtractor={(item, index) => `${item.route}-${item.bound}-${item.service_type}-${item.seq}-${item.stop}-${index}`}
           renderItem={({ item }) => (
             <View>
-              <Pressable
-                onPress={async () => {
-                  if (expandedStop === item.stop) {
-                    setExpandedStop(null);
-                  } else {
-                    setExpandedStop(item.stop);
-                    // Only fetch if not already fetched
-                    if (!etaMap[item.stop]) {
-                      setLoadingEta(item.stop);
-                      try {
-                        // Use correct direction for API
-                        let apiBound = bound;
-                        if (bound === 'I') apiBound = 'inbound';
-                        else if (bound === 'O') apiBound = 'outbound';
-                        const etaRes = await fetchStopETA(item.stop, route as string, service_type as string);
-                        setEtaMap(prev => ({ ...prev, [item.stop]: etaRes.data }));
-                      } catch (e) {
-                        setEtaMap(prev => ({ ...prev, [item.stop]: [] }));
-                      } finally {
-                        setLoadingEta(null);
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Pressable
+                  onPress={async () => {
+                    if (expandedStop === item.stop) {
+                      setExpandedStop(null);
+                    } else {
+                      setExpandedStop(item.stop);
+                      // Only fetch if not already fetched
+                      if (!etaMap[item.stop]) {
+                        setLoadingEta(item.stop);
+                        try {
+                          // Use correct direction for API
+                          let apiBound = bound;
+                          if (bound === 'I') apiBound = 'inbound';
+                          else if (bound === 'O') apiBound = 'outbound';
+                          const etaRes = await fetchStopETA(item.stop, route as string, service_type as string);
+                          setEtaMap(prev => ({ ...prev, [item.stop]: etaRes.data }));
+                        } catch (e) {
+                          setEtaMap(prev => ({ ...prev, [item.stop]: [] }));
+                        } finally {
+                          setLoadingEta(null);
+                        }
                       }
                     }
-                  }
-                }}
-                style={{ paddingVertical: 8 }}
-              >
-                <Text style={{ fontSize: 16, marginBottom: expandedStop === item.stop ? 0 : 8 }}>
-                  {item.seq}: {stopNames[item.stop] || item.stop}
-                </Text>
-              </Pressable>
+                  }}
+                  style={{ flex: 1, paddingVertical: 8 }}
+                >
+                  <Text style={{ fontSize: 16, marginBottom: expandedStop === item.stop ? 0 : 8 }}>
+                    {item.seq}: {stopNames[item.stop] || item.stop}
+                  </Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => {
+                    // TODO: handle favorite logic
+                  }}
+                  hitSlop={8}
+                  style={{ padding: 8 }}
+                  accessibilityLabel="Favorite this stop"
+                >
+                  <MaterialIcons name="star-border" size={24} color="#FFD700" />
+                </Pressable>
+              </View>
               {expandedStop === item.stop && (
                 <View style={{ paddingLeft: 16, paddingBottom: 8 }}>
                   {loadingEta === item.stop ? (
