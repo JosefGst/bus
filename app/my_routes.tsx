@@ -1,10 +1,14 @@
+import { useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Text, View } from 'react-native';
 
 import { ETA, fetchStop, getAllBUSETAs } from './utils/fetch';
+import { loadFavoriteStopIds } from './utils/storage';
 import { formatEtaToHKTime, getMinutesUntilArrival } from './utils/time_formatting';
 
 const MyRoutes = () => {
+  const params = useLocalSearchParams();
+  const stopIdFromParam = typeof params.stop_id === 'string' ? params.stop_id : undefined;
   const [isLoading, setLoading] = useState(true);
   const [data, setData] = useState<ETA[]>([]);
   const [generatedTimestamp, setGeneratedTimestamp] = useState<string>('');
@@ -62,17 +66,32 @@ const MyRoutes = () => {
     return () => clearInterval(timer);
   }, []);
 
+  // Load all favorite stop ids on mount
+  useEffect(() => {
+    loadFavoriteStopIds().then(setFavoriteStopIds);
+  }, []);
+
+  const [favoriteStopIds, setFavoriteStopIds] = useState<string[]>([]);
 
   return (
     <View style={{flex: 1, padding: 24}}>
       <Text style={{fontWeight: 'bold', fontSize: 18, marginBottom: 8}}>
         Local Time: {new Date(now).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
       </Text>
+      <Text>Generated Timestamp: {formatEtaToHKTime(generatedTimestamp) || 'N/A'}</Text>
+      {/* Show hello message if stopIdFromParam is present */}
+      {stopIdFromParam && (
+        <Text style={{ color: 'green', fontWeight: 'bold', marginBottom: 12 }}>hello from {stopIdFromParam}</Text>
+      )}
       {isLoading ? (
         <ActivityIndicator />
       ) : (
         <>
-          <Text>Generated Timestamp: {formatEtaToHKTime(generatedTimestamp) || 'N/A'}</Text>
+          
+          {/* Show hello message for each favorite stop id */}
+          {favoriteStopIds.map((id) => (
+            <Text key={id} style={{ color: 'green', fontWeight: 'bold', marginBottom: 4 }}>hello from {id}</Text>
+          ))}
           {/* Group ETAs by normalized stop name (remove (PA...)) */}
           {(() => {
             // Helper to normalize stop name by removing (PA...)
