@@ -9,6 +9,9 @@ import { formatEtaToHKTime, getMinutesUntilArrival } from './utils/time_formatti
 const MyRoutes = () => {
   const params = useLocalSearchParams();
   const stopIdFromParam = typeof params.stop_id === 'string' ? params.stop_id : undefined;
+  const routeFromParam = typeof params.route === 'string' ? params.route : undefined;
+  const boundFromParam = typeof params.bound === 'string' ? params.bound : undefined;
+  const serviceTypeFromParam = typeof params.service_type === 'string' ? params.service_type : undefined;
   const [isLoading, setLoading] = useState(true);
   const [data, setData] = useState<ETA[]>([]);
   const [generatedTimestamp, setGeneratedTimestamp] = useState<string>('');
@@ -18,11 +21,31 @@ const MyRoutes = () => {
 
   // State to trigger UI updates for countdown and show current time
   const [now, setNow] = useState(Date.now());
-  const routesToFetch = [
-    { stop: 'B464BD6334A93FA1', route: '272P', dir: '1' },
-    { stop: 'B644204AEDE7A031', route: '272X', dir: '1' },
-    // Add more routes here, e.g. { stop: 'SOME_STOP_ID', route: 'SOME_ROUTE', dir: '1' }
+  // Use state to accumulate all bus stops passed from star button
+  const baseRoutesToFetch = [
+    { stop: 'B464BD6334A93FA1', route: '272P', service_type: '1' },
+    { stop: 'B644204AEDE7A031', route: '272X', service_type: '1' },
+    // Add more routes here, e.g. { stop: 'SOME_STOP_ID', route: 'SOME_ROUTE', service_type: '1' }
   ];
+
+  const [routesToFetch, setRoutesToFetch] = useState(baseRoutesToFetch);
+
+  // Append new bus stop from params if present and not already in the array
+  useEffect(() => {
+    if (routeFromParam && boundFromParam && serviceTypeFromParam && stopIdFromParam) {
+      setRoutesToFetch(prev => {
+        const exists = prev.some(r => r.stop === stopIdFromParam && r.route === routeFromParam && r.service_type === serviceTypeFromParam);
+        if (!exists) {
+          return [
+            ...prev,
+            { stop: stopIdFromParam, route: routeFromParam, service_type: serviceTypeFromParam }
+          ];
+        }
+        return prev;
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [routeFromParam, boundFromParam, serviceTypeFromParam, stopIdFromParam]);
 
   // Fetch all ETAs and combine results using utils
   const fetchAll = async () => {
@@ -48,7 +71,6 @@ const MyRoutes = () => {
     }
   };
 
-
   // Fetch ETA data every 30 seconds
   useEffect(() => {
     fetchAll();
@@ -56,7 +78,9 @@ const MyRoutes = () => {
       fetchAll();
     }, 30000); // 30 seconds
     return () => clearInterval(fetchIntervalId);
-  }, []);
+  }, [routesToFetch]);
+
+
 
   // Update local clock every second for smooth countdown and current time
   useEffect(() => {
@@ -79,23 +103,25 @@ const MyRoutes = () => {
         Local Time: {new Date(now).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
       </Text>
       <Text>Generated Timestamp: {formatEtaToHKTime(generatedTimestamp) || 'N/A'}</Text>
-      {/* Show hello message if stopIdFromParam is present */}
-      {stopIdFromParam && (
-        <Text style={{ color: 'green', fontWeight: 'bold', marginBottom: 12 }}>hello from {stopIdFromParam}</Text>
+      {/* Show all data passed from star button press if present */}
+      {(routeFromParam || boundFromParam || serviceTypeFromParam || stopIdFromParam) && (
+        <View style={{ backgroundColor: '#e0ffe0', padding: 8, borderRadius: 6, marginBottom: 12 }}>
+          <Text style={{ fontWeight: 'bold', color: '#007a00' }}>Data from Star Button:</Text>
+          {routeFromParam && <Text>Route: {routeFromParam}</Text>}
+          {boundFromParam && <Text>Bound: {boundFromParam}</Text>}
+          {serviceTypeFromParam && <Text>Service Type: {serviceTypeFromParam}</Text>}
+          {stopIdFromParam && <Text>Stop ID: {stopIdFromParam}</Text>}
+        </View>
       )}
       {isLoading ? (
         <ActivityIndicator />
       ) : (
         <>
-          
-          {/* Show hello message for each favorite stop id */}
-          {favoriteStopIds.map((id) => (
-            <Text key={id} style={{ color: 'green', fontWeight: 'bold', marginBottom: 4 }}>hello from {id}</Text>
-          ))}
           {/* Group ETAs by normalized stop name (remove (PA...)) */}
           {(() => {
             // Helper to normalize stop name by removing (PA...)
-            const normalizeStopName = (name: string) => name.replace(/\s*\(PA\d+\)/, '').trim();
+            const normalizeStopName = (name: string) =>
+              typeof name === 'string' ? name.replace(/\s*\(PA\d+\)/, '').trim() : '';
 
             // Build a map: normalizedStopName -> { stopIds: Set, etas: [] }
             const stopGroups: Record<string, { stopIds: Set<string>, etas: ETA[] }> = {};
