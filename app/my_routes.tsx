@@ -8,6 +8,9 @@ import { ETA, fetchStop, getAllBUSETAs } from './utils/fetch';
 import { loadFavoriteStopIds } from './utils/storage';
 import { formatEtaToHKTime, getMinutesUntilArrival } from './utils/time_formatting';
 
+// Locally extend ETA to include stop
+type ETAWithStop = ETA & { stop: string };
+
 const MyRoutes = () => {
   const params = useLocalSearchParams();
   const stopIdFromParam = typeof params.stop_id === 'string' ? params.stop_id : undefined;
@@ -15,7 +18,7 @@ const MyRoutes = () => {
   const boundFromParam = typeof params.bound === 'string' ? params.bound : undefined;
   const serviceTypeFromParam = typeof params.service_type === 'string' ? params.service_type : undefined;
   const [isLoading, setLoading] = useState(true);
-  const [data, setData] = useState<ETA[]>([]);
+  const [data, setData] = useState<ETAWithStop[]>([]);
   const [generatedTimestamp, setGeneratedTimestamp] = useState<string>('');
   const [stopNames, setStopNames] = useState<Record<string, string>>({});
 
@@ -158,16 +161,9 @@ const MyRoutes = () => {
               stopGroups[stopName].stopIds.add(stopId);
             });
 
-            // For each ETA, assign to the correct stop group by matching stopId from routesToFetch
-            data.forEach((eta, index) => {
-              // Find the stopId for this ETA (by route/dir)
-              const normalizeDir = (dir: string) => {
-                if (dir === '1' || dir === 'O') return ['1', 'O'];
-                if (dir === '2' || dir === 'I') return ['2', 'I'];
-                return [dir];
-              };
-              const routeObj = routesToFetch.find(r => r.route === eta.route && r.service_type === eta.service_type && normalizeDir(r.service_type).includes(eta.dir));
-              const stopId = routeObj ? routeObj.stop : routesToFetch[index]?.stop;
+            // For each ETA, assign to the correct stop group by matching stopId directly from eta.stop
+            data.forEach((eta) => {
+              const stopId = eta.stop;
               const stopNameRaw = stopNames[stopId] || stopId;
               const stopName = normalizeStopName(stopNameRaw);
               if (stopGroups[stopName]) {
