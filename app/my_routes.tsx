@@ -1,3 +1,5 @@
+
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Text, View } from 'react-native';
@@ -22,13 +24,34 @@ const MyRoutes = () => {
   // State to trigger UI updates for countdown and show current time
   const [now, setNow] = useState(Date.now());
   // Use state to accumulate all bus stops passed from star button
-  const baseRoutesToFetch = [
+
+  const ROUTES_KEY = 'baseRoutesToFetch';
+  const defaultRoutes = [
     { stop: 'B464BD6334A93FA1', route: '272P', service_type: '1' },
     { stop: 'B644204AEDE7A031', route: '272X', service_type: '1' },
     // Add more routes here, e.g. { stop: 'SOME_STOP_ID', route: 'SOME_ROUTE', service_type: '1' }
   ];
 
-  const [routesToFetch, setRoutesToFetch] = useState(baseRoutesToFetch);
+  const [routesToFetch, setRoutesToFetch] = useState(defaultRoutes);
+
+  // Load routes from storage on mount
+  useEffect(() => {
+    (async () => {
+      try {
+        const saved = await AsyncStorage.getItem(ROUTES_KEY);
+        if (saved) {
+          setRoutesToFetch(JSON.parse(saved));
+        }
+      } catch (e) {
+        // ignore, use default
+      }
+    })();
+  }, []);
+
+  // Save routes to storage whenever they change
+  useEffect(() => {
+    AsyncStorage.setItem(ROUTES_KEY, JSON.stringify(routesToFetch)).catch(() => {});
+  }, [routesToFetch]);
 
   // Append new bus stop from params if present and not already in the array
   useEffect(() => {
@@ -103,7 +126,7 @@ const MyRoutes = () => {
         Local Time: {new Date(now).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
       </Text>
       <Text>Generated Timestamp: {formatEtaToHKTime(generatedTimestamp) || 'N/A'}</Text>
-      {/* Show all data passed from star button press if present */}
+      {/* Show all data passed from star button press if present
       {(routeFromParam || boundFromParam || serviceTypeFromParam || stopIdFromParam) && (
         <View style={{ backgroundColor: '#e0ffe0', padding: 8, borderRadius: 6, marginBottom: 12 }}>
           <Text style={{ fontWeight: 'bold', color: '#007a00' }}>Data from Star Button:</Text>
@@ -112,7 +135,7 @@ const MyRoutes = () => {
           {serviceTypeFromParam && <Text>Service Type: {serviceTypeFromParam}</Text>}
           {stopIdFromParam && <Text>Stop ID: {stopIdFromParam}</Text>}
         </View>
-      )}
+      )} */}
       {isLoading ? (
         <ActivityIndicator />
       ) : (
