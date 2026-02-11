@@ -1,7 +1,7 @@
+import { MaterialIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
 import { ETA, fetchRouteSTOP, fetchStopETA, getCachedStops, ROUTS } from './utils/fetch';
 import { formatEtaToHKTime, getMinutesUntilArrival } from './utils/time_formatting';
 
@@ -59,7 +59,7 @@ const RoutesStopScreen = () => {
   return (
     <View style={{ flex: 1, paddingTop: 40 }}>
       <Pressable onPress={() => router.back()} style={{ position: 'absolute', left: 16, top: 40, padding: 8, zIndex: 10 }}>
-        <Text style={{ fontSize: 24, color: '#007aff' }}>{'←'}</Text>
+        <MaterialIcons name="navigate-before" size={42} color="#007aff" />
       </Pressable>
       <Text style={{ fontSize: 22, fontWeight: 'bold', textAlign: 'center', marginBottom: 4 }}>
         {typeof route === 'string' ? `Route: ${route}` : 'Route'}
@@ -110,7 +110,7 @@ const RoutesStopScreen = () => {
                 </Pressable>
                 <Pressable
                   onPress={() => {
-                    // TODO: handle favorite logic
+                    router.push('/my_routes');
                   }}
                   hitSlop={8}
                   style={{ padding: 8 }}
