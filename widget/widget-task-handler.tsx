@@ -63,7 +63,7 @@ export async function widgetTaskHandler(props: WidgetTaskHandlerProps) {
       const { allData } = await getAllBUSETAs(routesToFetch);
 
       // Debug: log the fetched ETA data
-      console.log('[Widget] allData from getAllBUSETAs:', JSON.stringify(allData));
+      // console.log('[Widget] allData from getAllBUSETAs:', JSON.stringify(allData));
 
       // Fetch stop names for all unique stops
       const uniqueStops = Array.from(new Set(routesToFetch.map(r => r.stop)));
@@ -75,23 +75,21 @@ export async function widgetTaskHandler(props: WidgetTaskHandlerProps) {
         }
       });
 
-      // Attach stopName to each ETA (by matching route/dir to routesToFetch)
-      const normalizeDir = (dir: string) => {
-        if (dir === '1' || dir === 'O') return ['1', 'O'];
-        if (dir === '2' || dir === 'I') return ['2', 'I'];
-        return [dir];
-      };
-      const etasWithStopName = allData.map((eta, idx) => {
-        const routeObj = routesToFetch.find(r => r.route === eta.route && normalizeDir(r.dir).includes(eta.dir));
+      
+      // Group ETAs by stopName
+      const groupedEtas: Record<string, any[]> = {};
+      allData.forEach((eta, idx) => {
+        const routeObj = routesToFetch.find(r => r.route === eta.route && r.service_type === eta.service_type);
         const stopId = routeObj ? routeObj.stop : routesToFetch[idx]?.stop;
-        const stopName = stopId ? stopNameMap[stopId] : undefined;
-        return { ...eta, stopName };
+        const stopName = stopId ? stopNameMap[stopId] : 'Unknown Stop';
+        if (!groupedEtas[stopName]) groupedEtas[stopName] = [];
+        groupedEtas[stopName].push({ ...eta, stopName });
       });
 
-      // Debug: log the final ETAs with stopName
-      console.log('[Widget] etasWithStopName:', JSON.stringify(etasWithStopName));
+      // Debug: log the grouped ETAs
+      // console.log('[Widget] groupedEtas:', JSON.stringify(groupedEtas));
 
-      props.renderWidget(<Widget {...widgetInfo} etas={etasWithStopName} />);
+      props.renderWidget(<Widget {...widgetInfo} groupedEtas={groupedEtas} />);
     } catch (error) {
       console.error("Error fetching ETA data:", error);
       // Always render something, even on error

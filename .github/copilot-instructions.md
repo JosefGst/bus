@@ -2,12 +2,10 @@
 # Copilot Instructions for AI Agents
 
 ## Project Overview
-- Expo React Native project targeting Android and iOS (see [README.md](../../README.md)).
-- Main app code in [app/](../../app/), widgets in [widget/](../../widget/), native code in [android/](../../android/) and [ios/](../../ios/).
-- [app-example/](../../app-example/) contains demo/experimental features and shared UI patterns.
+ Expo React Native project targeting Android and iOS (see the [README.md](../../README.md)).
 
 ## Architecture & Data Flow
-- **Navigation:** Managed via expo-router, organized with `_layout.tsx` files in [app/](../../app/) and [app-example/](../../app-example/).
+ Widget logic goes in [widget/](../../widget/). Widget names must match the configuration in [app.json](../../app.json).
 - **Screens & Routes:** Route logic in [my_routes.tsx](../../app/my_routes.tsx) and subfolders under `(tabs)/`.
 - **Widgets:** Android widgets implemented in [widget/](../../widget/), registered via [widget-registration.ts](../../widget-registration.ts) and configured in [app.json](../../app.json).
 - **Data Fetching:** API calls and data formatting in [app/utils/fetch.ts](../../app/utils/fetch.ts) and [app/utils/time_formatting.ts](../../app/utils/time_formatting.ts).
