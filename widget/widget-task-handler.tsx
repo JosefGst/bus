@@ -1,13 +1,24 @@
 import React from "react";
 import type { WidgetTaskHandlerProps } from "react-native-android-widget";
+
 import { fetchStop, getAllBUSETAs } from "../app/utils/fetch";
 import { BusETAWidget } from "./BusETAWidget";
 
-// Routes to fetch - same as in my_routes.tsx
-const routesToFetch = [
-  { stop: 'B464BD6334A93FA1', route: '272P', dir: '1' },
-  { stop: 'B644204AEDE7A031', route: '272X', dir: '1' },
+// Use the same AsyncStorage key as MyRoutes
+const ROUTES_KEY = 'baseRoutesToFetch';
+// Fallback default routes if storage is empty or fails
+const defaultRoutes = [
+  { stop: 'B464BD6334A93FA1', route: '272P', service_type: '1' },
+  { stop: 'B644204AEDE7A031', route: '272X', service_type: '1' },
 ];
+
+// Dynamically import AsyncStorage (avoid import at top-level for widget env)
+let AsyncStorage: any = null;
+try {
+  AsyncStorage = require('@react-native-async-storage/async-storage').default;
+} catch (e) {
+  // If not available, will fallback to defaultRoutes
+}
 
 const nameToWidget = {
   // BusETAWidget must match the "name" in app.json widget configuration
@@ -24,10 +35,35 @@ export async function widgetTaskHandler(props: WidgetTaskHandlerProps) {
     return;
   }
 
+
   // Helper function to fetch and render ETA data
   const fetchAndRenderETAs = async () => {
+    let routesToFetch = defaultRoutes;
+    // Try to load routes from AsyncStorage if available
+    if (AsyncStorage && AsyncStorage.getItem) {
+      try {
+        const saved = await AsyncStorage.getItem(ROUTES_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          // Defensive: ensure array of objects with stop/route/dir
+          if (Array.isArray(parsed) && parsed.every(r => r.stop && r.route && r.service_type)) {
+            // Convert service_type to dir for widget
+            routesToFetch = parsed.map(r => ({ stop: r.stop, route: r.route, service_type: r.service_type }));
+          }
+        }
+      } catch (e) {
+        // Ignore, fallback to defaultRoutes
+      }
+    }
+
+    // Debug: log the routes to fetch
+    console.log('[Widget] routesToFetch:', JSON.stringify(routesToFetch));
+
     try {
       const { allData } = await getAllBUSETAs(routesToFetch);
+
+      // Debug: log the fetched ETA data
+      console.log('[Widget] allData from getAllBUSETAs:', JSON.stringify(allData));
 
       // Fetch stop names for all unique stops
       const uniqueStops = Array.from(new Set(routesToFetch.map(r => r.stop)));
@@ -51,6 +87,9 @@ export async function widgetTaskHandler(props: WidgetTaskHandlerProps) {
         const stopName = stopId ? stopNameMap[stopId] : undefined;
         return { ...eta, stopName };
       });
+
+      // Debug: log the final ETAs with stopName
+      console.log('[Widget] etasWithStopName:', JSON.stringify(etasWithStopName));
 
       props.renderWidget(<Widget {...widgetInfo} etas={etasWithStopName} />);
     } catch (error) {
