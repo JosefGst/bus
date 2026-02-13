@@ -58,6 +58,7 @@ const App = () => {
             autoCorrect={false}
             autoCapitalize="none"
             clearButtonMode="while-editing"
+            placeholderTextColor="black"
           />
           <FlatList
             data={filteredRoutes}
