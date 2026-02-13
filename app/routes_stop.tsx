@@ -122,10 +122,9 @@ const RoutesStopScreen = () => {
                     router.push({ pathname: '/my_favorites', params: { route: item.route, bound: item.bound, service_type: item.service_type, stop_id: item.stop } });
                   }}
                   hitSlop={8}
-                  style={{ padding: 8 }}
                   accessibilityLabel="Favorite this stop"
                 >
-                  <MaterialIcons name="star" size={24} color="#FFD700" />
+                  <MaterialIcons name="star" size={42} color="#FFD700" />
                 </Pressable>
               </View>
               {expandedStop === item.stop && (
@@ -158,9 +157,9 @@ import { StyleSheet } from 'react-native';
 
 const styles = StyleSheet.create({
   seqCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
     backgroundColor: 'red',
     justifyContent: 'center',
     alignItems: 'center',
@@ -169,6 +168,6 @@ const styles = StyleSheet.create({
   seqText: {
     color: 'white',
     fontWeight: 'bold',
-    fontSize: 16,
+    fontSize: 20,
   },
 });
