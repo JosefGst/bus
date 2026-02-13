@@ -1,7 +1,7 @@
 import React from "react";
 import type { WidgetTaskHandlerProps } from "react-native-android-widget";
 
-import { fetchStop, getAllBUSETAs } from "../app/utils/fetch";
+import { fetchStop, getAllBUSETAs } from "../utils/fetch";
 import { BusETAWidget } from "./BusETAWidget";
 
 // Use the same AsyncStorage key as MyRoutes
@@ -81,7 +81,7 @@ export async function widgetTaskHandler(props: WidgetTaskHandlerProps) {
       routesToFetch.forEach(routeObj => {
         const stopId = routeObj.stop;
         const stopNameRaw = stopNameMap[stopId] || stopId;
-        const normalizedStopName = require('../app/utils/string_formatting').normalizeStopName(stopNameRaw);
+        const normalizedStopName = require('../utils/string_formatting').normalizeStopName(stopNameRaw);
         if (!groupedEtas[normalizedStopName]) {
           groupedEtas[normalizedStopName] = [];
         }
@@ -91,7 +91,7 @@ export async function widgetTaskHandler(props: WidgetTaskHandlerProps) {
       allData.forEach((eta) => {
         const stopId = eta.stop;
         const stopNameRaw = stopNameMap[stopId] || stopId;
-        const normalizedStopName = require('../app/utils/string_formatting').normalizeStopName(stopNameRaw);
+        const normalizedStopName = require('../utils/string_formatting').normalizeStopName(stopNameRaw);
         if (groupedEtas[normalizedStopName]) {
           groupedEtas[normalizedStopName].push(eta);
         }

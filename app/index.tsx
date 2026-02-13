@@ -1,8 +1,8 @@
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { ROUTS, getCachedRoutes } from './utils/fetch';
-import { formatEtaToHKTime } from './utils/time_formatting';
+import { ROUTS, getCachedRoutes } from '../utils/fetch';
+import { formatEtaToHKTime } from '../utils/time_formatting';
 
 
 

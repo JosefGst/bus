@@ -5,10 +5,10 @@ import { useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Text, TouchableOpacity, View } from 'react-native';
 
-import { ETA, fetchStop, getAllBUSETAs } from './utils/fetch';
-import { loadFavoriteStopIds } from './utils/storage';
-import { normalizeStopName } from './utils/string_formatting';
-import { formatEtaToHKTime, getMinutesUntilArrival } from './utils/time_formatting';
+import { ETA, fetchStop, getAllBUSETAs } from '../utils/fetch';
+import { loadFavoriteStopIds } from '../utils/storage';
+import { normalizeStopName } from '../utils/string_formatting';
+import { formatEtaToHKTime, getMinutesUntilArrival } from '../utils/time_formatting';
 
 // Locally extend ETA to include stop
 type ETAWithStop = ETA & { stop: string };

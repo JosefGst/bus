@@ -2,9 +2,9 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native';
-import { ETA, fetchRouteSTOP, fetchStopETA, getCachedStops, ROUTS } from './utils/fetch';
-import { appendFavoriteStopId } from './utils/storage';
-import { formatEtaToHKTime, getMinutesUntilArrival } from './utils/time_formatting';
+import { ETA, fetchRouteSTOP, fetchStopETA, getCachedStops, ROUTS } from '../utils/fetch';
+import { appendFavoriteStopId } from '../utils/storage';
+import { formatEtaToHKTime, getMinutesUntilArrival } from '../utils/time_formatting';
 
 const RoutesStopScreen = () => {
   const [now, setNow] = useState(Date.now());

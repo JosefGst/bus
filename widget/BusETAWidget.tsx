@@ -3,9 +3,9 @@ import {
   FlexWidget,
   TextWidget,
 } from "react-native-android-widget";
-import type { ETA } from "../app/utils/fetch";
-import { normalizeStopName } from "../app/utils/string_formatting";
-import { getMinutesUntilArrival } from "../app/utils/time_formatting";
+import type { ETA } from "../utils/fetch";
+import { normalizeStopName } from "../utils/string_formatting";
+import { getMinutesUntilArrival } from "../utils/time_formatting";
 
 interface BusETAWidgetProps {
   groupedEtas?: Record<string, ETA[]>;
