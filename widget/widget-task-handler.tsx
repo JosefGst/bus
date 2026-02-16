@@ -4,26 +4,64 @@ import type { WidgetTaskHandlerProps } from "react-native-android-widget";
 import { fetchStop, getAllBUSETAs } from "../utils/fetch";
 import { BusETAWidget } from "./BusETAWidget";
 
-// Use the same AsyncStorage key as MyRoutes
-const ROUTES_KEY = 'baseRoutesToFetch';
-// Fallback default routes if storage is empty or fails
+const ROUTES_KEY = "baseRoutesToFetch";
 const defaultRoutes = [
-  { stop: 'B464BD6334A93FA1', route: '272P', service_type: '1' },
-  { stop: 'B644204AEDE7A031', route: '272X', service_type: '1' },
+  { stop: "B464BD6334A93FA1", route: "272P", service_type: "1" },
+  { stop: "B644204AEDE7A031", route: "272X", service_type: "1" },
 ];
 
-// Dynamically import AsyncStorage (avoid import at top-level for widget env)
-let AsyncStorage: any = null;
-try {
-  AsyncStorage = require('@react-native-async-storage/async-storage').default;
-} catch (e) {
-  // If not available, will fallback to defaultRoutes
+/** Reject after ms so we never leave the widget stuck on Loading (e.g. when app is closed). */
+function withTimeout<T>(ms: number, promise: Promise<T>): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const t = setTimeout(() => reject(new Error("Widget update timeout")), ms);
+    promise.then(
+      (v) => {
+        clearTimeout(t);
+        resolve(v);
+      },
+      (e) => {
+        clearTimeout(t);
+        reject(e);
+      }
+    );
+  });
+}
+
+/** Get routes from storage with a short timeout; never block the widget. */
+async function getRoutesWithTimeout(): Promise<typeof defaultRoutes> {
+  let AsyncStorage: any = null;
+  try {
+    AsyncStorage = require("@react-native-async-storage/async-storage").default;
+  } catch {
+    return defaultRoutes;
+  }
+  if (!AsyncStorage?.getItem) return defaultRoutes;
+  try {
+    const saved = await withTimeout(1500, AsyncStorage.getItem(ROUTES_KEY));
+    if (!saved) return defaultRoutes;
+    const parsed = JSON.parse(saved as string);
+    if (
+      Array.isArray(parsed) &&
+      parsed.every((r: any) => r.stop && r.route && r.service_type)
+    ) {
+      return parsed.map((r: any) => ({
+        stop: r.stop,
+        route: r.route,
+        service_type: r.service_type,
+      }));
+    }
+  } catch {
+    // Ignore; use default routes
+  }
+  return defaultRoutes;
 }
 
 const nameToWidget = {
-  // BusETAWidget must match the "name" in app.json widget configuration
   BusETAWidget: BusETAWidget,
 };
+
+const WIDGET_FETCH_TIMEOUT_MS = 12000;
+const TAP_TO_REFRESH = "Tap to refresh";
 
 export async function widgetTaskHandler(props: WidgetTaskHandlerProps) {
   const widgetInfo = props.widgetInfo;
@@ -31,96 +69,61 @@ export async function widgetTaskHandler(props: WidgetTaskHandlerProps) {
     widgetInfo.widgetName as keyof typeof nameToWidget
   ] as any;
 
-  if (!Widget) {
-    return;
-  }
+  if (!Widget) return;
 
+  const renderError = (message: string) => {
+    props.renderWidget(<Widget {...widgetInfo} error={message} />);
+  };
 
-  // Helper function to fetch and render ETA data
   const fetchAndRenderETAs = async () => {
     let routesToFetch = defaultRoutes;
-    // Try to load routes from AsyncStorage if available
-    if (AsyncStorage && AsyncStorage.getItem) {
-      try {
-        const saved = await AsyncStorage.getItem(ROUTES_KEY);
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          // Defensive: ensure array of objects with stop/route/dir
-          if (Array.isArray(parsed) && parsed.every(r => r.stop && r.route && r.service_type)) {
-            // Convert service_type to dir for widget
-            routesToFetch = parsed.map(r => ({ stop: r.stop, route: r.route, service_type: r.service_type }));
-          }
-        }
-      } catch (e) {
-        // Ignore, fallback to defaultRoutes
-      }
+    try {
+      routesToFetch = await getRoutesWithTimeout();
+    } catch {
+      // use defaultRoutes
     }
 
-    // Debug: log the routes to fetch
-    console.log('[Widget] routesToFetch:', JSON.stringify(routesToFetch));
-
     try {
-      const { allData } = await getAllBUSETAs(routesToFetch);
+      const work = (async () => {
+        const { allData } = await getAllBUSETAs(routesToFetch);
+        const uniqueStops = Array.from(new Set(routesToFetch.map((r) => r.stop)));
+        const stopInfoResults = await Promise.all(
+          uniqueStops.map((stopId) => fetchStop(stopId))
+        );
+        const stopNameMap: Record<string, string> = {};
+        stopInfoResults.forEach((info, idx) => {
+          if (info) stopNameMap[uniqueStops[idx]] = info.name_en;
+        });
 
-      // Debug: log the fetched ETA data
-      // console.log('[Widget] allData from getAllBUSETAs:', JSON.stringify(allData));
+        const { normalizeStopName } = require("../utils/string_formatting");
+        const groupedEtas: Record<string, any[]> = {};
+        routesToFetch.forEach((routeObj) => {
+          const stopId = routeObj.stop;
+          const stopNameRaw = stopNameMap[stopId] ?? stopId;
+          const key = normalizeStopName(stopNameRaw);
+          if (!groupedEtas[key]) groupedEtas[key] = [];
+        });
+        allData.forEach((eta: any) => {
+          const stopId = eta.stop;
+          const stopNameRaw = stopNameMap[stopId] ?? stopId;
+          const key = normalizeStopName(stopNameRaw);
+          if (groupedEtas[key]) groupedEtas[key].push(eta);
+        });
 
-      // Fetch stop names for all unique stops
-      const uniqueStops = Array.from(new Set(routesToFetch.map(r => r.stop)));
-      const stopInfoResults = await Promise.all(uniqueStops.map(stopId => fetchStop(stopId)));
-      const stopNameMap: Record<string, string> = {};
-      stopInfoResults.forEach((info, idx) => {
-        if (info) {
-          stopNameMap[uniqueStops[idx]] = info.name_en;
-        }
-      });
+        props.renderWidget(<Widget {...widgetInfo} groupedEtas={groupedEtas} />);
+      })();
 
-      
-      // Group ETAs by normalized stop name (matching MyRoutes logic)
-      const groupedEtas: Record<string, any[]> = {};
-      routesToFetch.forEach(routeObj => {
-        const stopId = routeObj.stop;
-        const stopNameRaw = stopNameMap[stopId] || stopId;
-        const normalizedStopName = require('../utils/string_formatting').normalizeStopName(stopNameRaw);
-        if (!groupedEtas[normalizedStopName]) {
-          groupedEtas[normalizedStopName] = [];
-        }
-      });
-
-      // Assign ETAs to the correct stop group by matching stopId
-      allData.forEach((eta) => {
-        const stopId = eta.stop;
-        const stopNameRaw = stopNameMap[stopId] || stopId;
-        const normalizedStopName = require('../utils/string_formatting').normalizeStopName(stopNameRaw);
-        if (groupedEtas[normalizedStopName]) {
-          groupedEtas[normalizedStopName].push(eta);
-        }
-      });
-
-      // Debug: log the grouped ETAs
-      // console.log('[Widget] groupedEtas:', JSON.stringify(groupedEtas));
-
-      props.renderWidget(<Widget {...widgetInfo} groupedEtas={groupedEtas} />);
+      await withTimeout(WIDGET_FETCH_TIMEOUT_MS, work);
     } catch (error) {
-      console.error("Error fetching ETA data:", error);
-      // Always render something, even on error
-      props.renderWidget(
-        <Widget 
-          {...widgetInfo} 
-          error="Failed to load ETAs" 
-        />
-      );
+      console.error("[Widget] ETA fetch failed:", error);
+      renderError(TAP_TO_REFRESH);
     }
   };
 
-  // Always render the widget immediately for all actions that require display
-  // First render with loading state synchronously
   props.renderWidget(<Widget {...widgetInfo} isLoading={true} />);
-  
-  // Then fetch data asynchronously (don't await, let it update in background)
-  fetchAndRenderETAs().catch(err => {
-    console.error("Failed to fetch ETAs:", err);
-    props.renderWidget(<Widget {...widgetInfo} error="Failed to load ETAs" />);
+
+  fetchAndRenderETAs().catch(() => {
+    renderError(TAP_TO_REFRESH);
   });
 
   switch (props.widgetAction) {
