@@ -40,52 +40,59 @@ export type Stop = {
   data_timestamp?: string;
 };
 
+/** Fetch URL and parse as JSON; throw a clear error if response is HTML or invalid JSON. */
+async function fetchJson<T>(url: string): Promise<T> {
+  const response = await fetch(url);
+  const text = await response.text();
+  const trimmed = text.trim();
+  if (!trimmed.startsWith("{") && !trimmed.startsWith("[")) {
+    throw new Error(`Server returned non-JSON (status ${response.status})`);
+  }
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    throw new Error(`Invalid JSON from server (status ${response.status})`);
+  }
+}
 
 // Fetch all BUS ROUTS route
 export const fetchROUTE = async (): Promise<KMBResponse<ROUTS>> => {
   const url = `https://data.etabus.gov.hk/v1/transport/kmb/route`;
-  const response = await fetch(url);
-  return response.json() as Promise<KMBResponse<ROUTS>>;
+  return fetchJson<KMBResponse<ROUTS>>(url);
 };
 
 // Fetch all BUS STOPS
 export const fetchSTOP = async (): Promise<KMBResponse<Stop>> => {
   const url = `https://data.etabus.gov.hk/v1/transport/kmb/stop`;
-  const response = await fetch(url);
-  return response.json() as Promise<KMBResponse<Stop>>;
+  return fetchJson<KMBResponse<Stop>>(url);
 };
 
 // Fetch all ROUTS Stops for a given route
 export const fetchRouteSTOP = async (route: string, dir: string, service_type: string): Promise<KMBResponse<ROUTS>> => {
   const url = `https://data.etabus.gov.hk/v1/transport/kmb/route-stop/${route}/${dir}/${service_type}`;
-  const response = await fetch(url);
-  return response.json() as Promise<KMBResponse<ROUTS>>;
+  return fetchJson<KMBResponse<ROUTS>>(url);
 };
 
 // Fetch ETA for a single route
 export const fetchRouteETA = async (route: string, dir: string): Promise<KMBResponse<ETA>> => {
   const url = `https://data.etabus.gov.hk/v1/transport/kmb/route-eta/${route}/${dir}`;
-  const response = await fetch(url);
-  return response.json() as Promise<KMBResponse<ETA>>;
+  return fetchJson<KMBResponse<ETA>>(url);
 };
 
 // Fetch ETA for a stop and route
 export const fetchStopETA = async (stop: string, route: string, service_type: string): Promise<KMBResponse<ETA>> => {
   const url = `https://data.etabus.gov.hk/v1/transport/kmb/eta/${stop}/${route}/${service_type}`;
-  const response = await fetch(url);
-  return response.json() as Promise<KMBResponse<ETA>>;
+  return fetchJson<KMBResponse<ETA>>(url);
 };
-
 
 // Fetch stop info for a given stop ID
 export const fetchStop = async (stop: string): Promise<Stop | null> => {
   try {
     const url = `https://data.etabus.gov.hk/v1/transport/kmb/stop/${stop}`;
-    const response = await fetch(url);
-    const json = await response.json();
-    return json.data as Stop;
+    const json = await fetchJson<{ data?: Stop }>(url);
+    return json.data ?? null;
   } catch (e) {
-    console.error('Failed to fetch stop info', e);
+    console.error("Failed to fetch stop info", e);
     return null;
   }
 };
