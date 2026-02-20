@@ -1,6 +1,6 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native';
 import { ETA, fetchRouteSTOP, fetchStopETA, getCachedStops, ROUTS } from '../utils/fetch';
 import { appendFavoriteStopId } from '../utils/storage';
@@ -18,6 +18,8 @@ const RoutesStopScreen = () => {
   const [error, setError] = useState<string | null>(null);
   const [etaMap, setEtaMap] = useState<{ [stopId: string]: ETA[] }>({});
   const [loadingEta, setLoadingEta] = useState<string | null>(null);
+  // Track favorite operations in progress to prevent rapid clicks
+  const favoriteInProgress = useRef<{ [stopId: string]: boolean }>({});
 
   // Update local clock every second for smooth countdown and current time
     useEffect(() => {
@@ -118,8 +120,50 @@ const RoutesStopScreen = () => {
                 </Pressable>
                 <Pressable
                   onPress={async () => {
-                    await appendFavoriteStopId(item.stop);
-                    router.push({ pathname: '/my_favorites', params: { route: item.route, bound: item.bound, service_type: item.service_type, stop_id: item.stop } });
+                    // Debounce: prevent rapid clicks
+                    if (favoriteInProgress.current[item.stop]) {
+                      // #region agent log
+                      fetch('http://127.0.0.1:7762/ingest/956c9b76-c79f-4ae9-ad09-1053517c875a',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'1e9dd1'},body:JSON.stringify({sessionId:'1e9dd1',location:'routes_stop.tsx:121',message:'Star button clicked (debounced)',data:{stopId:item.stop},timestamp:Date.now(),runId:'post-fix',hypothesisId:'A'})}).catch(()=>{});
+                      // #endregion
+                      return;
+                    }
+                    
+                    // #region agent log
+                    fetch('http://127.0.0.1:7762/ingest/956c9b76-c79f-4ae9-ad09-1053517c875a',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'1e9dd1'},body:JSON.stringify({sessionId:'1e9dd1',location:'routes_stop.tsx:127',message:'Star button clicked',data:{stopId:item.stop,route:item.route,bound:item.bound,service_type:item.service_type},timestamp:Date.now(),runId:'post-fix',hypothesisId:'A,B,C'})}).catch(()=>{});
+                    // #endregion
+                    
+                    favoriteInProgress.current[item.stop] = true;
+                    try {
+                      // #region agent log
+                      fetch('http://127.0.0.1:7762/ingest/956c9b76-c79f-4ae9-ad09-1053517c875a',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'1e9dd1'},body:JSON.stringify({sessionId:'1e9dd1',location:'routes_stop.tsx:132',message:'appendFavoriteStopId called',data:{stopId:item.stop},timestamp:Date.now(),runId:'post-fix',hypothesisId:'A,B,C'})}).catch(()=>{});
+                      // #endregion
+                      const success = await appendFavoriteStopId(item.stop);
+                      // #region agent log
+                      fetch('http://127.0.0.1:7762/ingest/956c9b76-c79f-4ae9-ad09-1053517c875a',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'1e9dd1'},body:JSON.stringify({sessionId:'1e9dd1',location:'routes_stop.tsx:135',message:'appendFavoriteStopId completed',data:{stopId:item.stop,success},timestamp:Date.now(),runId:'post-fix',hypothesisId:'A,B,C'})}).catch(()=>{});
+                      // #endregion
+                      
+                      if (success) {
+                        // #region agent log
+                        fetch('http://127.0.0.1:7762/ingest/956c9b76-c79f-4ae9-ad09-1053517c875a',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'1e9dd1'},body:JSON.stringify({sessionId:'1e9dd1',location:'routes_stop.tsx:139',message:'Navigation starting (success)',data:{stopId:item.stop},timestamp:Date.now(),runId:'post-fix',hypothesisId:'C'})}).catch(()=>{});
+                        // #endregion
+                        router.push({ pathname: '/my_favorites', params: { route: item.route, bound: item.bound, service_type: item.service_type, stop_id: item.stop } });
+                      } else {
+                        // #region agent log
+                        fetch('http://127.0.0.1:7762/ingest/956c9b76-c79f-4ae9-ad09-1053517c875a',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'1e9dd1'},body:JSON.stringify({sessionId:'1e9dd1',location:'routes_stop.tsx:143',message:'Save failed, navigation cancelled',data:{stopId:item.stop},timestamp:Date.now(),runId:'post-fix',hypothesisId:'B,C'})}).catch(()=>{});
+                        // #endregion
+                        console.error('Failed to save favorite stop');
+                      }
+                    } catch (e) {
+                      // #region agent log
+                      fetch('http://127.0.0.1:7762/ingest/956c9b76-c79f-4ae9-ad09-1053517c875a',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'1e9dd1'},body:JSON.stringify({sessionId:'1e9dd1',location:'routes_stop.tsx:148',message:'appendFavoriteStopId exception',data:{stopId:item.stop,error:String(e)},timestamp:Date.now(),runId:'post-fix',hypothesisId:'B,C'})}).catch(()=>{});
+                      // #endregion
+                      console.error('Error saving favorite stop', e);
+                    } finally {
+                      // Clear the debounce flag after a short delay
+                      setTimeout(() => {
+                        favoriteInProgress.current[item.stop] = false;
+                      }, 500);
+                    }
                   }}
                   hitSlop={8}
                   accessibilityLabel="Favorite this stop"
