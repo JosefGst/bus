@@ -1,5 +1,6 @@
-
 # :bus: Expo React Native Bus App
+
+[![Website](https://img.shields.io/badge/website-live-green?logo=globe)](https://josefgst.github.io/blog/2026/02/20/oncoming_bus-a-more-convenient-way-to-check-the-kmb-bus-arrival-time-hk/) [![Expo](https://img.shields.io/badge/Expo-49.0.0-blue)]() [![Platform](https://img.shields.io/badge/Platform-Android%20%7C%20Web-green)]()
 
 ## :mag: Overview
 A simple React Native app built with Expo, to fetch KMB bus arrival times and the ability to save favorite bus stops. The favorite bus stops are also displayed in an Android widget, which is the main advantage compared to other similar apps.
@@ -77,6 +78,11 @@ A simple React Native app built with Expo, to fetch KMB bus arrival times and th
 ## 🧩 Widget Integration
 - Android widgets are implemented in `widget/` and registered via `widget-registration.ts`.
 - Widget configuration is managed in `app.json`.
+
+## TODO's and Bugs:
+- [ ] :star:star button sometimes doesen't add the bus stop to favorites
+- [ ] :warning: widget sometimes get stuck on "Loading..."
+- [ ] :iphone: IOS support for widget (currently only Android is supported)
 
 ## 📚 Resources
 - [📖 Expo Documentation](https://docs.expo.dev/)
